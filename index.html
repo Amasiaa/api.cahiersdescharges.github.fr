@@ -1,1 +1,1358 @@
 
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cahier des charges — CadreMobiho API</title>
+<meta name="description" content="Cahier des charges de l'API CadreMobiho : rôles, exigences fonctionnelles, sécurité, architecture, écarts et évolutions.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📋</text></svg>">
+
+<style>
+  /* ---------- reset ---------- */
+  *, *::before, *::after { box-sizing: border-box; }
+  * { margin: 0; padding: 0; }
+  img, picture, video, canvas, svg { display: block; max-width: 100%; }
+  input, button, textarea, select { font: inherit; color: inherit; }
+  p, h1, h2, h3, h4, h5, h6 { overflow-wrap: break-word; }
+
+  /* ---------- tokens ---------- */
+  :root {
+    --paper:      #F2F4F3;
+    --surface:    #FFFFFF;
+    --ink:        #14231F;
+    --ink-2:      #33443F;
+    --muted:      #5F736D;
+    --rule:       #D4DCD9;
+    --rule-soft:  #E4EAE8;
+    --accent:     #0D6E5F;
+    --accent-ink: #085146;
+    --accent-bg:  #E1EDE9;
+    --flag:       #A65A2E;
+    --flag-bg:    #F4E7DE;
+
+    --serif: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --sans:  ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono:  ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper:      #0E1614;
+      --surface:    #16211E;
+      --ink:        #E4ECE8;
+      --ink-2:      #C0CDC8;
+      --muted:      #8FA39D;
+      --rule:       #2A3B36;
+      --rule-soft:  #21302C;
+      --accent:     #4FBFA6;
+      --accent-ink: #6FD3BC;
+      --accent-bg:  #16332C;
+      --flag:       #D98E5F;
+      --flag-bg:    #33241A;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper:      #0E1614;
+    --surface:    #16211E;
+    --ink:        #E4ECE8;
+    --ink-2:      #C0CDC8;
+    --muted:      #8FA39D;
+    --rule:       #2A3B36;
+    --rule-soft:  #21302C;
+    --accent:     #4FBFA6;
+    --accent-ink: #6FD3BC;
+    --accent-bg:  #16332C;
+    --flag:       #D98E5F;
+    --flag-bg:    #33241A;
+  }
+
+  :root[data-theme="light"] {
+    --paper:      #F2F4F3;
+    --surface:    #FFFFFF;
+    --ink:        #14231F;
+    --ink-2:      #33443F;
+    --muted:      #5F736D;
+    --rule:       #D4DCD9;
+    --rule-soft:  #E4EAE8;
+    --accent:     #0D6E5F;
+    --accent-ink: #085146;
+    --accent-bg:  #E1EDE9;
+    --flag:       #A65A2E;
+    --flag-bg:    #F4E7DE;
+  }
+
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    * { animation: none !important; transition: none !important; }
+  }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 17px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { color: var(--accent-ink); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:focus-visible,
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+
+  /* ---------- shell ---------- */
+
+  .shell { max-width: 1180px; margin: 0 auto; padding: 0 24px 96px; }
+
+  .masthead { padding: 40px 0 32px; border-bottom: 2px solid var(--ink); }
+
+  .topline {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .theme-toggle {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: none;
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    padding: 5px 11px;
+    cursor: pointer;
+  }
+  .theme-toggle:hover { color: var(--accent-ink); border-color: var(--accent); }
+
+  .masthead h1 {
+    font-family: var(--sans);
+    font-size: clamp(34px, 5.2vw, 56px);
+    line-height: 1.05;
+    letter-spacing: -0.025em;
+    font-weight: 660;
+    text-wrap: balance;
+    margin-bottom: 18px;
+  }
+
+  .standfirst {
+    max-width: 62ch;
+    font-size: 19px;
+    color: var(--ink-2);
+    margin-bottom: 34px;
+  }
+
+  .frontmatter {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 22px 30px;
+    padding-bottom: 6px;
+  }
+
+  .fm-key {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 5px;
+  }
+
+  .fm-val { font-family: var(--sans); font-size: 15px; line-height: 1.45; }
+
+  /* ---------- layout ---------- */
+
+  .layout {
+    display: grid;
+    grid-template-columns: 218px minmax(0, 1fr);
+    gap: 56px;
+    align-items: start;
+  }
+
+  .rail {
+    position: sticky;
+    top: 28px;
+    max-height: calc(100vh - 56px);
+    overflow-y: auto;
+    padding: 40px 0;
+    font-family: var(--sans);
+  }
+
+  .rail-title {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding-bottom: 12px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .rail ol { list-style: none; display: flex; flex-direction: column; gap: 1px; }
+
+  .rail a {
+    display: grid;
+    grid-template-columns: 22px 1fr;
+    gap: 8px;
+    padding: 5px 0;
+    font-size: 13.5px;
+    line-height: 1.35;
+    color: var(--muted);
+    text-decoration: none;
+  }
+
+  .rail a:hover { color: var(--accent-ink); }
+  .rail a .n { font-family: var(--mono); font-size: 11px; color: var(--rule); padding-top: 2px; }
+  .rail a:hover .n { color: var(--accent); }
+  .rail a.is-flag:hover { color: var(--flag); }
+  .rail a.is-flag:hover .n { color: var(--flag); }
+
+  main { padding: 40px 0 0; min-width: 0; }
+
+  /* ---------- sections ---------- */
+
+  .sec { padding: 30px 0 12px; scroll-margin-top: 24px; }
+  .sec + .sec { border-top: 1px solid var(--rule-soft); }
+
+  .sec > h2 {
+    font-family: var(--sans);
+    font-size: clamp(23px, 2.6vw, 29px);
+    line-height: 1.2;
+    letter-spacing: -0.018em;
+    font-weight: 640;
+    text-wrap: balance;
+    margin-bottom: 22px;
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 6px;
+    align-items: baseline;
+  }
+
+  .sec > h2 .n {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+  }
+
+  .sec h3 {
+    font-family: var(--sans);
+    font-size: 17px;
+    font-weight: 640;
+    letter-spacing: -0.005em;
+    margin: 30px 0 12px;
+  }
+
+  .sec h4 {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 24px 0 10px;
+  }
+
+  .body { max-width: 72ch; }
+  .body p { margin-bottom: 14px; }
+  .body p:last-child { margin-bottom: 0; }
+
+  .body ul { list-style: none; max-width: 72ch; margin-bottom: 14px; }
+  .body ul li { position: relative; padding-left: 20px; margin-bottom: 7px; }
+  .body ul li::before {
+    content: "";
+    position: absolute;
+    left: 3px; top: 0.72em;
+    width: 5px; height: 1px;
+    background: var(--accent);
+  }
+
+  /* ---------- tables ---------- */
+
+  .tw { overflow-x: auto; margin: 6px 0 22px; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--sans);
+    font-size: 14.5px;
+    line-height: 1.5;
+    font-variant-numeric: tabular-nums;
+  }
+
+  thead th {
+    text-align: left;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 0 16px 9px 0;
+    border-bottom: 1px solid var(--ink);
+    white-space: nowrap;
+  }
+
+  tbody td {
+    padding: 11px 16px 11px 0;
+    border-bottom: 1px solid var(--rule-soft);
+    vertical-align: top;
+  }
+
+  tbody tr:last-child td { border-bottom: 1px solid var(--rule); }
+
+  tbody th {
+    text-align: left;
+    font-weight: 600;
+    padding: 11px 16px 11px 0;
+    border-bottom: 1px solid var(--rule-soft);
+    vertical-align: top;
+    white-space: nowrap;
+  }
+
+  td.wide, th.wide { min-width: 22ch; }
+
+  /* ---------- requirement ids ---------- */
+
+  .rid {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    color: var(--accent-ink);
+    background: var(--accent-bg);
+    padding: 2px 7px;
+    border-radius: 2px;
+  }
+
+  .rid.flag { color: var(--flag); background: var(--flag-bg); }
+
+  code {
+    font-family: var(--mono);
+    font-size: 0.855em;
+    background: var(--rule-soft);
+    padding: 1px 5px;
+    border-radius: 2px;
+    word-break: break-word;
+  }
+
+  td code, th code { background: none; padding: 0; color: var(--ink-2); }
+
+  /* ---------- callouts ---------- */
+
+  .note {
+    max-width: 72ch;
+    font-size: 15.5px;
+    line-height: 1.6;
+    color: var(--ink-2);
+    border-left: 2px solid var(--accent);
+    padding: 2px 0 2px 18px;
+    margin: 20px 0;
+  }
+
+  .note.flag { border-left-color: var(--flag); }
+  .note strong { color: var(--ink); }
+
+  .rule-card {
+    max-width: 72ch;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--accent);
+    border-radius: 3px;
+    padding: 22px 24px;
+    margin: 20px 0;
+  }
+
+  .rule-card p { font-family: var(--sans); font-size: 15px; }
+  .rule-card ol { list-style: none; counter-reset: r; margin: 12px 0 0; }
+  .rule-card ol li {
+    counter-increment: r;
+    position: relative;
+    padding-left: 28px;
+    margin-bottom: 7px;
+    font-family: var(--sans);
+    font-size: 15px;
+  }
+  .rule-card ol li::before {
+    content: counter(r);
+    position: absolute; left: 0; top: 1px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+  }
+
+  /* ---------- diagram ---------- */
+
+  pre.diagram {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.55;
+    color: var(--ink-2);
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 20px 22px;
+    overflow-x: auto;
+    margin: 6px 0 22px;
+  }
+
+  /* ---------- state flow ---------- */
+
+  .flow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 12px;
+    margin: 4px 0 20px;
+  }
+
+  .flow .st {
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    padding: 3px 9px;
+    background: var(--surface);
+  }
+  .flow .st.on { border-color: var(--accent); color: var(--accent-ink); }
+  .flow .st.off { color: var(--muted); }
+  .flow .ar { color: var(--muted); }
+
+  footer.doc {
+    margin-top: 56px;
+    padding-top: 22px;
+    border-top: 1px solid var(--rule);
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--muted);
+    max-width: 72ch;
+  }
+
+  /* ---------- narrow ---------- */
+
+  @media (max-width: 940px) {
+    body { font-size: 16.5px; }
+    .layout { grid-template-columns: 1fr; gap: 0; }
+    .rail {
+      position: static;
+      max-height: none;
+      padding: 34px 0 6px;
+      border-bottom: 1px solid var(--rule);
+    }
+    .rail ol {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+      gap: 0 22px;
+    }
+    .sec > h2 { grid-template-columns: 1fr; gap: 4px; }
+  }
+
+  /* ---------- print ---------- */
+
+  @media print {
+    :root,
+    :root[data-theme="dark"],
+    :root[data-theme="light"] {
+      --paper:      #FFFFFF;
+      --surface:    #FFFFFF;
+      --ink:        #101010;
+      --ink-2:      #2C2C2C;
+      --muted:      #5A5A5A;
+      --rule:       #B8B8B8;
+      --rule-soft:  #DCDCDC;
+      --accent:     #0B5B4E;
+      --accent-ink: #0B5B4E;
+      --accent-bg:  #EDF3F1;
+      --flag:       #8A4A24;
+      --flag-bg:    #F4EBE4;
+    }
+
+    @page { margin: 16mm 14mm; }
+
+    body { font-size: 10.5pt; line-height: 1.5; background: #fff; }
+    .shell { max-width: none; padding: 0; }
+    .rail, .theme-toggle { display: none; }
+    .layout { display: block; }
+    main { padding: 0; }
+    .masthead { padding-top: 0; }
+    .masthead h1 { font-size: 26pt; }
+    .standfirst { font-size: 11.5pt; }
+
+    a { color: inherit; text-decoration: none; }
+    table { font-size: 9pt; }
+    pre.diagram { font-size: 8.5pt; }
+
+    .sec { padding: 18px 0 6px; }
+    .sec > h2 { break-after: avoid; page-break-after: avoid; }
+    .sec h3, .sec h4 { break-after: avoid; page-break-after: avoid; }
+    tr, .rule-card, .note, pre.diagram, .flow { break-inside: avoid; page-break-inside: avoid; }
+    thead { display: table-header-group; }
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <header class="masthead">
+    <div class="topline">
+      <div class="eyebrow">Cahier des charges · v1.0</div>
+      <button class="theme-toggle" type="button" id="themeToggle" aria-label="Changer de thème">Thème</button>
+    </div>
+    <h1>CadreMobiho API</h1>
+    <p class="standfirst">
+      Back-end du cadre photo connecté pour seniors : comptes et validation, liaisons
+      familiales, albums et médias, quotas et facturation, appels vidéo, rappels du
+      quotidien et notifications push.
+    </p>
+    <div class="frontmatter">
+      <div>
+        <div class="fm-key">Date</div>
+        <div class="fm-val">2 septembre 2026</div>
+      </div>
+      <div>
+        <div class="fm-key">Périmètre</div>
+        <div class="fm-val">API REST + WebSocket<br><code>fr.mobiho.cadremobihoapi</code></div>
+      </div>
+      <div>
+        <div class="fm-key">Version applicative</div>
+        <div class="fm-val">0.0.1-SNAPSHOT</div>
+      </div>
+      <div>
+        <div class="fm-key">Socle</div>
+        <div class="fm-val">Java 17 · Spring Boot 4.1.0 · PostgreSQL</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+
+    <nav class="rail" aria-label="Sommaire">
+      <div class="rail-title">Sommaire</div>
+      <ol>
+        <li><a href="#s1"><span class="n">01</span><span>Contexte et objectifs</span></a></li>
+        <li><a href="#s2"><span class="n">02</span><span>Acteurs et rôles</span></a></li>
+        <li><a href="#s3"><span class="n">03</span><span>Exigences fonctionnelles</span></a></li>
+        <li><a href="#s4"><span class="n">04</span><span>Interfaces exposées</span></a></li>
+        <li><a href="#s5"><span class="n">05</span><span>Modèle de données</span></a></li>
+        <li><a href="#s6"><span class="n">06</span><span>Sécurité</span></a></li>
+        <li><a href="#s7"><span class="n">07</span><span>Architecture technique</span></a></li>
+        <li><a href="#s8"><span class="n">08</span><span>Exigences non fonctionnelles</span></a></li>
+        <li><a href="#s9"><span class="n">09</span><span>Environnements</span></a></li>
+        <li><a href="#s10"><span class="n">10</span><span>Recette et qualité</span></a></li>
+        <li><a href="#s11" class="is-flag"><span class="n">11</span><span>Contraintes</span></a></li>
+        <li><a href="#s12" class="is-flag"><span class="n">12</span><span>Écarts identifiés</span></a></li>
+        <li><a href="#s13"><span class="n">13</span><span>Évolutions attendues</span></a></li>
+        <li><a href="#annexe"><span class="n">—</span><span>Glossaire</span></a></li>
+      </ol>
+    </nav>
+
+    <main>
+
+      <div class="note">
+        Ce document décrit le système <strong>tel qu'il est spécifié et implémenté</strong> à ce
+        jour. Les manques identifiés et les évolutions attendues sont regroupés en §12 et §13 ;
+        ils ne sont pas des exigences satisfaites.
+      </div>
+
+      <!-- ============ 1 ============ -->
+      <section class="sec" id="s1">
+        <h2><span class="n">01</span><span>Contexte et objectifs</span></h2>
+
+        <h3>Problème adressé</h3>
+        <div class="body">
+          <p>
+            Les personnes âgées maintenues à domicile sont isolées du flux numérique familial
+            (messageries, réseaux sociaux, visioconférence) parce que ces outils supposent une
+            maîtrise et une dextérité qu'elles n'ont pas toujours. CadreMobiho propose un
+            <strong>cadre photo connecté</strong> posé chez le senior : la famille y dépose
+            photos, vidéos et messages, et peut l'appeler en visio. Le senior n'a rien à
+            administrer.
+          </p>
+        </div>
+
+        <h3>Objet du présent système</h3>
+        <div class="body">
+          <p>L'API est le <strong>back-end unique</strong> de l'écosystème. Elle sert :</p>
+          <ul>
+            <li>l'<strong>application du cadre</strong> (côté senior, appareil dédié) ;</li>
+            <li>l'<strong>application mobile famille/aidant</strong> (Android, iOS) ;</li>
+            <li>le <strong>site web</strong> d'administration et d'inscription.</li>
+          </ul>
+          <p>
+            Elle porte l'intégralité de la logique métier : comptes et validation, liaisons
+            familiales, albums et médias, quotas et facturation, appels vidéo (signalisation),
+            rappels du quotidien et notifications push.
+          </p>
+        </div>
+
+        <h3>Objectifs mesurables</h3>
+        <div class="tw">
+          <table>
+            <thead>
+              <tr><th>Réf.</th><th class="wide">Objectif</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><span class="rid">OBJ-1</span></td><td>Aucune action d'administration requise du senior : son compte est créé, configuré et facturé par un tiers (l'aidant).</td></tr>
+              <tr><td><span class="rid">OBJ-2</span></td><td>Aucun contenu ne parvient à un senior sans validation humaine préalable (validation du compte émetteur <em>et</em> de la liaison familiale).</td></tr>
+              <tr><td><span class="rid">OBJ-3</span></td><td>Établir un appel vidéo sans faire transiter le flux audio/vidéo par le serveur (coût et confidentialité).</td></tr>
+              <tr><td><span class="rid">OBJ-4</span></td><td>Facturer le stockage à l'aidant, sans que l'API manipule de données de carte bancaire.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============ 2 ============ -->
+      <section class="sec" id="s2">
+        <h2><span class="n">02</span><span>Acteurs et rôles</span></h2>
+
+        <div class="body">
+          <p>Quatre rôles, portés par une seule entité <code>User</code> (énumération <code>Role</code>).</p>
+        </div>
+
+        <div class="tw">
+          <table>
+            <thead>
+              <tr><th>Rôle</th><th>Qui</th><th>Création du compte</th><th class="wide">Droits principaux</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th>ADMIN</th>
+                <td>L'exploitant de la plateforme</td>
+                <td>Provisionné au démarrage</td>
+                <td>Valide, rejette et suspend tout compte ; accès en lecture à l'ensemble des contenus ; envoi de notifications push ciblées</td>
+              </tr>
+              <tr>
+                <th>AIDANT</th>
+                <td>Le proche référent (enfant, tuteur)</td>
+                <td>Auto-inscription, validée par l'ADMIN</td>
+                <td>Crée et gère les comptes PARENT ; valide les demandes de liaison ; souscrit et paie les abonnements ; appelle ses parents</td>
+              </tr>
+              <tr>
+                <th>PARENT</th>
+                <td>Le senior, utilisateur du cadre</td>
+                <td>Créé par son AIDANT, <strong>actif immédiatement</strong></td>
+                <td>Consulte albums, médias et rappels ; reçoit et accepte les appels ; gère ses favoris</td>
+              </tr>
+              <tr>
+                <th>FAMILLE</th>
+                <td>Petits-enfants, fratrie, proches</td>
+                <td>Auto-inscription, validée par l'ADMIN</td>
+                <td>Demande une liaison à un PARENT ; dépose photos, vidéos et messages ; crée des rappels ; appelle le PARENT</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="body">
+          <p>
+            <span class="rid">RG-ROLE-1</span> &nbsp;L'auto-inscription
+            (<code>POST /api/auth/register</code>) n'accepte que les rôles <code>AIDANT</code> et
+            <code>FAMILLE</code>. Toute tentative d'inscription en <code>ADMIN</code> ou
+            <code>PARENT</code> est rejetée.
+          </p>
+          <p>
+            <span class="rid">RG-ROLE-2</span> &nbsp;Un compte <code>PARENT</code> reçoit à sa
+            création un <strong>username public unique</strong>, dérivé de son identité
+            (<code>prenom.nom</code>, suffixé d'un compteur en cas de collision). C'est l'unique
+            identifiant que l'aidant communique à la famille pour demander une liaison ; l'UUID
+            interne n'est jamais diffusé à cette fin.
+          </p>
+          <p>
+            <span class="rid">RG-ROLE-3</span> &nbsp;Un <code>PARENT</code> est rattaché à
+            exactement un <code>AIDANT</code> gestionnaire (<code>managingAidant</code>), fixé à
+            la création.
+          </p>
+        </div>
+      </section>
+
+      <!-- ============ 3 ============ -->
+      <section class="sec" id="s3">
+        <h2><span class="n">03</span><span>Exigences fonctionnelles</span></h2>
+
+        <h3>3.1 — Cycle de vie des comptes</h3>
+        <div class="flow">
+          <span class="st on">PENDING</span><span class="ar">→</span>
+          <span class="st on">ACTIVE</span><span class="ar">|</span>
+          <span class="st off">REJECTED</span><span class="ar">·</span>
+          <span class="st on">ACTIVE</span><span class="ar">⇄</span>
+          <span class="st off">SUSPENDED</span>
+        </div>
+        <div class="tw">
+          <table>
+            <thead><tr><th>Réf.</th><th class="wide">Exigence</th></tr></thead>
+            <tbody>
+              <tr><td><span class="rid">EF-1.1</span></td><td>Un AIDANT ou une FAMILLE s'inscrit ; son compte est créé en <code>PENDING</code>.</td></tr>
+              <tr><td><span class="rid">EF-1.2</span></td><td>Un compte non <code>ACTIVE</code> <strong>ne peut pas s'authentifier</strong> — la tentative échoue quel que soit le mot de passe.</td></tr>
+              <tr><td><span class="rid">EF-1.3</span></td><td>L'ADMIN liste les comptes, filtrables par statut et par rôle, et dispose d'une vue dédiée des comptes en attente.</td></tr>
+              <tr><td><span class="rid">EF-1.4</span></td><td>L'ADMIN approuve, rejette, suspend ou réactive un compte. L'identité du validateur et la date sont horodatées.</td></tr>
+              <tr><td><span class="rid">EF-1.5</span></td><td>Un PARENT créé par son AIDANT est directement <code>ACTIVE</code> : il ne passe pas par la validation ADMIN.</td></tr>
+              <tr><td><span class="rid">EF-1.6</span></td><td>À la création d'un PARENT, un abonnement <code>FREE</code> lui est automatiquement attribué.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>3.2 — Authentification et session</h3>
+        <div class="tw">
+          <table>
+            <thead><tr><th>Réf.</th><th class="wide">Exigence</th></tr></thead>
+            <tbody>
+              <tr><td><span class="rid">EF-2.1</span></td><td>Authentification par <strong>JWT stateless</strong> : <code>Authorization: Bearer &lt;accessToken&gt;</code>.</td></tr>
+              <tr><td><span class="rid">EF-2.2</span></td><td>Durée de vie de l'<em>access token</em> : <strong>15 minutes</strong>. Durée du <em>refresh token</em> : <strong>14 jours</strong>.</td></tr>
+              <tr><td><span class="rid">EF-2.3</span></td><td>Les refresh tokens sont <strong>persistés en base</strong>, avec rotation à chaque rafraîchissement et révocation à la déconnexion.</td></tr>
+              <tr><td><span class="rid">EF-2.4</span></td><td>Les mots de passe sont stockés hachés en <strong>BCrypt</strong>, longueur minimale 8 caractères.</td></tr>
+              <tr><td><span class="rid">EF-2.5</span></td><td><code>GET /api/auth/me</code> renvoie le profil du porteur du token.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>3.3 — Liaisons familiales</h3>
+        <div class="tw">
+          <table>
+            <thead><tr><th>Réf.</th><th class="wide">Exigence</th></tr></thead>
+            <tbody>
+              <tr><td><span class="rid">EF-3.1</span></td><td>Une FAMILLE demande une liaison à un PARENT via son <code>username</code> public, avec un libellé de relation optionnel (« petite-fille », « voisin »). La liaison naît en <code>PENDING</code>.</td></tr>
+              <tr><td><span class="rid">EF-3.2</span></td><td>Une liaison est <strong>unique</strong> par couple (famille, parent) : la demande en double est rejetée.</td></tr>
+              <tr><td><span class="rid">EF-3.3</span></td><td>Seul l'<strong>AIDANT gestionnaire du parent</strong> ciblé approuve ou rejette la demande. Le décideur et la date sont horodatés.</td></tr>
+              <tr><td><span class="rid">EF-3.4</span></td><td>Tant que la liaison n'est pas <code>APPROVED</code>, la FAMILLE n'a <strong>aucun accès</strong> aux contenus du parent et ne peut pas l'appeler.</td></tr>
+              <tr><td><span class="rid">EF-3.5</span></td><td>La FAMILLE consulte la liste de ses liaisons et leur statut.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>3.4 — Règle d'accès aux contenus d'un parent</h3>
+        <div class="rule-card">
+          <p>
+            <span class="rid">RG-ACCES</span> &nbsp;L'accès aux albums, médias et rappels d'un
+            PARENT est centralisé (<code>AccessGuard</code>) et accordé exclusivement à :
+          </p>
+          <ol>
+            <li>l'<strong>ADMIN</strong> ;</li>
+            <li>le <strong>PARENT lui-même</strong> ;</li>
+            <li>son <strong>AIDANT gestionnaire</strong> ;</li>
+            <li>toute <strong>FAMILLE dont la liaison est <code>APPROVED</code></strong>.</li>
+          </ol>
+        </div>
+        <div class="body">
+          <p>
+            Tout autre appelant reçoit <code>403 Forbidden</code>. Cette règle est le point de
+            contrôle unique : elle est appliquée à l'identique par les services album, média,
+            rappel et appel.
+          </p>
+        </div>
+
+        <h3>3.5 — Albums et médias</h3>
+        <div class="tw">
+          <table>
+            <thead><tr><th>Réf.</th><th class="wide">Exigence</th></tr></thead>
+            <tbody>
+              <tr><td><span class="rid">EF-5.1</span></td><td>Création d'albums (nom, description) rattachés à un PARENT. Un PARENT peut créer ses propres albums ; les autres rôles doivent désigner le parent cible.</td></tr>
+              <tr><td><span class="rid">EF-5.2</span></td><td>Dépôt de médias en <code>multipart/form-data</code>, avec un <strong>message texte optionnel</strong> (1 000 caractères) attaché au média.</td></tr>
+              <tr><td><span class="rid">EF-5.3</span></td><td>Seuls les types <code>image/*</code> et <code>video/*</code> sont acceptés ; tout autre type de contenu est refusé.</td></tr>
+              <tr><td><span class="rid">EF-5.4</span></td><td>Taille maximale par fichier et par requête : <strong>512 Mo</strong>, alignée entre l'API et le reverse-proxy.</td></tr>
+              <tr><td><span class="rid">EF-5.5</span></td><td>Consultation des médias d'un album ou de <strong>tous les albums d'un parent</strong>, avec filtres sur le type (photo/vidéo) et sur les favoris.</td></tr>
+              <tr><td><span class="rid">EF-5.6</span></td><td>Marquage et démarquage d'un média en <strong>favori</strong>.</td></tr>
+              <tr><td><span class="rid">EF-5.7</span></td><td>Téléchargement du binaire d'un média (<code>GET /api/media/{id}/content</code>).</td></tr>
+              <tr><td><span class="rid">EF-5.8</span></td><td><strong>Miniatures JPEG</strong> générées à la demande, taille bornée à [32, 1024] px, défaut 320. Rendu déterministe permettant un cache HTTP fort (ETag immuable, <code>Cache-Control</code> 1 an, gestion du <code>304</code>). Photos redimensionnées à ratio préservé et jamais agrandies ; vidéos dotées d'un <strong>poster généré</strong>.</td></tr>
+              <tr><td><span class="rid">EF-5.9</span></td><td>Un album peut porter une <strong>image de couverture</strong> désignée parmi ses médias. La suppression du média de couverture met la référence à jour.</td></tr>
+              <tr><td><span class="rid">EF-5.10</span></td><td>Suppression d'un média réservée à l'ADMIN, au PARENT propriétaire, à l'auteur du dépôt ou à l'AIDANT gestionnaire. Elle libère le quota et efface le fichier du stockage.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>3.6 — Abonnements et quotas de stockage</h3>
+        <div class="tw">
+          <table>
+            <thead><tr><th>Formule</th><th>Quota</th></tr></thead>
+            <tbody>
+              <tr><th><code>FREE</code></th><td>1 Go</td></tr>
+              <tr><th><code>BASIC</code></th><td>20 Go</td></tr>
+              <tr><th><code>PREMIUM</code></th><td>200 Go</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="tw">
+          <table>
+            <thead><tr><th>Réf.</th><th class="wide">Exigence</th></tr></thead>
+            <tbody>
+              <tr><td><span class="rid">EF-6.1</span></td><td>Chaque PARENT porte un abonnement actif décrivant sa formule, son quota et sa <strong>consommation courante en octets</strong>.</td></tr>
+              <tr><td><span class="rid">EF-6.2</span></td><td>Le quota est <strong>réservé avant l'écriture</strong> du fichier ; si l'écriture échoue, la réservation est annulée. Aucun octet stocké n'est décompté hors quota.</td></tr>
+              <tr><td><span class="rid">EF-6.3</span></td><td>Un dépôt qui ferait dépasser le quota est refusé.</td></tr>
+              <tr><td><span class="rid">EF-6.4</span></td><td>La suppression d'un média restitue les octets correspondants.</td></tr>
+              <tr><td><span class="rid">EF-6.5</span></td><td>L'AIDANT peut affecter une formule manuellement (usage administratif, formule gratuite).</td></tr>
+              <tr><td><span class="rid">EF-6.6</span></td><td>Quota et consommation sont consultables par tout compte ayant accès au parent.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>3.7 — Paiement des abonnements</h3>
+        <div class="tw">
+          <table>
+            <thead><tr><th>Réf.</th><th class="wide">Exigence</th></tr></thead>
+            <tbody>
+              <tr><td><span class="rid">EF-7.1</span></td><td>Le payeur est l'<strong>AIDANT</strong>, jamais le senior. Abonnement <strong>mensuel</strong>, une souscription par parent financé.</td></tr>
+              <tr><td><span class="rid">EF-7.2</span></td><td>Le paiement passe par <strong>Stripe Checkout</strong> (mode <code>subscription</code>) : <strong>aucune donnée de carte ne transite par l'API</strong>.</td></tr>
+              <tr><td><span class="rid">EF-7.3</span></td><td>L'activation d'une formule payante est pilotée <strong>exclusivement par les webhooks</strong> (<code>checkout.session.completed</code>), jamais par le retour navigateur, jugé non fiable.</td></tr>
+              <tr><td><span class="rid">EF-7.4</span></td><td>En cas de changement de formule, l'ancienne souscription Stripe est résiliée pour éviter une double facturation.</td></tr>
+              <tr><td><span class="rid">EF-7.5</span></td><td>La résiliation (<code>customer.subscription.deleted</code>), qu'elle vienne de l'aidant ou de Stripe après impayés, <strong>rebascule le parent en <code>FREE</code></strong>.</td></tr>
+              <tr><td><span class="rid">EF-7.6</span></td><td>Un échec de paiement (<code>invoice.payment_failed</code>) ne coupe pas le service : Stripe relance ; seule la résiliation finale a un effet.</td></tr>
+              <tr><td><span class="rid">EF-7.7</span></td><td>L'AIDANT accède à un <strong>Customer Portal</strong> Stripe pour gérer moyen de paiement, factures et résiliation.</td></tr>
+              <tr><td><span class="rid">EF-7.8</span></td><td>Le endpoint webhook est <strong>public mais authentifié par la signature <code>Stripe-Signature</code></strong>.</td></tr>
+              <tr><td><span class="rid">EF-7.9</span></td><td><strong>Dégradation propre</strong> : sans clé Stripe, les endpoints de paiement renvoient une erreur explicite et l'affectation manuelle des formules reste opérationnelle.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>3.8 — Appels vidéo</h3>
+
+        <h4>Session d'appel</h4>
+        <div class="flow">
+          <span class="st on">RINGING</span><span class="ar">→</span>
+          <span class="st on">ONGOING</span><span class="ar">→</span>
+          <span class="st off">ENDED</span><span class="ar">|</span>
+          <span class="st off">REJECTED</span><span class="ar">|</span>
+          <span class="st off">MISSED</span>
+        </div>
+        <div class="tw">
+          <table>
+            <thead><tr><th>Réf.</th><th class="wide">Exigence</th></tr></thead>
+            <tbody>
+              <tr><td><span class="rid">EF-8.1</span></td><td>Seuls les rôles <strong>FAMILLE</strong> et <strong>AIDANT</strong> peuvent initier un appel ; la cible doit être un compte <strong>PARENT</strong>.</td></tr>
+              <tr><td><span class="rid">EF-8.2</span></td><td>L'autorisation d'appeler suit la règle <span class="rid">RG-ACCES</span> : liaison <code>APPROVED</code> pour une FAMILLE, gestion du compte pour un AIDANT.</td></tr>
+              <tr><td><span class="rid">EF-8.3</span></td><td>L'initiation crée une session avec un <code>roomId</code> unique et publie une <strong>notification push d'appel entrant</strong>, émise après commit de la transaction.</td></tr>
+              <tr><td><span class="rid">EF-8.4</span></td><td>Seul le <strong>destinataire</strong> peut accepter ou refuser l'appel. Les deux participants peuvent le terminer ou le marquer manqué.</td></tr>
+              <tr><td><span class="rid">EF-8.5</span></td><td>Seuls les deux participants et l'ADMIN consultent une session. Chaque utilisateur dispose de son <strong>historique d'appels</strong>, émis et reçus, du plus récent au plus ancien.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h4>Signalisation WebRTC — <code>/ws/calls</code></h4>
+        <div class="tw">
+          <table>
+            <thead><tr><th>Réf.</th><th class="wide">Exigence</th></tr></thead>
+            <tbody>
+              <tr><td><span class="rid">EF-8.6</span></td><td>Le flux audio/vidéo est <strong>strictement pair à pair (WebRTC)</strong> ; le serveur ne relaie que la négociation (SDP, candidats ICE) et <strong>jamais le média</strong>.</td></tr>
+              <tr><td><span class="rid">EF-8.7</span></td><td>Le WebSocket est authentifié <strong>à la poignée de main</strong> par le même JWT que l'API REST, en en-tête <code>Authorization</code> ou en paramètre <code>?token=</code> pour les clients incapables de poser un en-tête. Un token absent ou expiré ferme la connexion en <code>401</code>.</td></tr>
+              <tr><td><span class="rid">EF-8.8</span></td><td>Protocole à message unique : <code>type</code> + <code>callId</code> + <code>payload</code> opaque. Client → serveur : <code>JOIN</code>, <code>OFFER</code>, <code>ANSWER</code>, <code>ICE_CANDIDATE</code>, <code>HANGUP</code>. Serveur → client : <code>JOINED</code>, <code>PEER_JOINED</code>, <code>PEER_LEFT</code>, <code>ERROR</code>.</td></tr>
+              <tr><td><span class="rid">EF-8.9</span></td><td><code>JOIN</code> est obligatoirement le premier message. Le <code>payload</code> n'est <strong>jamais interprété</strong> par le serveur ; les messages relayés sont estampillés du champ <code>from</code>.</td></tr>
+              <tr><td><span class="rid">EF-8.10</span></td><td>Seuls les deux participants rejoignent la salle, et uniquement tant que l'appel est <code>RINGING</code> ou <code>ONGOING</code>. Un tiers ou un appel terminé sont refusés.</td></tr>
+              <tr><td><span class="rid">EF-8.11</span></td><td>Tampon message texte : <strong>128 Ko</strong> (une offre SDP vidéo dépasse fréquemment les 8 Ko par défaut). Délai d'inactivité : <strong>15 minutes</strong> ; le client émet un ping toutes les ~30 s.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h4>Serveurs ICE — <code>GET /api/calls/ice-servers</code></h4>
+        <div class="tw">
+          <table>
+            <thead><tr><th>Réf.</th><th class="wide">Exigence</th></tr></thead>
+            <tbody>
+              <tr><td><span class="rid">EF-8.12</span></td><td>L'API fournit la configuration ICE (STUN + TURN) à passer telle quelle au <code>RTCPeerConnection</code>, avec une date d'expiration permettant au client de la mettre en cache.</td></tr>
+              <tr><td><span class="rid">EF-8.13</span></td><td>Le <strong>STUN</strong> (<code>stun.cloudflare.com</code>) est toujours servi ; il suffit à la majorité des appels.</td></tr>
+              <tr><td><span class="rid">EF-8.14</span></td><td>Les identifiants <strong>TURN</strong> sont <strong>générés côté serveur</strong> (TTL 1 h) : le jeton d'API Cloudflare ne quitte jamais l'API.</td></tr>
+              <tr><td><span class="rid">EF-8.15</span></td><td><strong>Dégradation propre</strong> : TURN non configuré, ou API Cloudflare indisponible (timeout 5 s) → le STUN seul est renvoyé. Les appels derrière un NAT symétrique (~10–20 %) échouent, mais le service reste debout.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>3.9 — Rappels du quotidien</h3>
+        <div class="body">
+          <p>
+            Types : <code>MEDICAMENT</code>, <code>REVEIL</code>, <code>SIESTE</code>,
+            <code>PETIT_DEJEUNER</code>, <code>DEJEUNER</code>, <code>DINER</code>,
+            <code>RENDEZ_VOUS</code>, <code>ANNIVERSAIRE</code>, <code>BOIRE_EAU</code>.
+          </p>
+        </div>
+        <div class="tw">
+          <table>
+            <thead><tr><th>Réf.</th><th class="wide">Exigence</th></tr></thead>
+            <tbody>
+              <tr><td><span class="rid">EF-9.1</span></td><td>Un rappel est destiné à un PARENT et porte un type, un titre libre optionnel et une heure.</td></tr>
+              <tr><td><span class="rid">EF-9.2</span></td><td><strong>Planification exclusive</strong> : soit une <strong>date ponctuelle</strong>, soit un <strong>ensemble de jours de la semaine</strong> — jamais les deux, jamais aucun des deux.</td></tr>
+              <tr><td><span class="rid">EF-9.3</span></td><td>Création et consultation ouvertes à tout compte lié au PARENT (règle <span class="rid">RG-ACCES</span>).</td></tr>
+              <tr><td><span class="rid">EF-9.4</span></td><td>Modification, activation et suppression réservées à l'ADMIN, au PARENT, à l'auteur du rappel ou à l'AIDANT gestionnaire.</td></tr>
+              <tr><td><span class="rid">EF-9.5</span></td><td>Un rappel peut être <strong>désactivé sans être supprimé</strong>, et la liste est filtrable sur les seuls rappels actifs.</td></tr>
+              <tr><td><span class="rid">EF-9.6</span></td><td>Les rappels sont restitués <strong>triés par heure croissante</strong>.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>3.10 — Notifications push</h3>
+        <div class="tw">
+          <table>
+            <thead><tr><th>Réf.</th><th class="wide">Exigence</th></tr></thead>
+            <tbody>
+              <tr><td><span class="rid">EF-10.1</span></td><td>Un appareil enregistre son <strong>jeton FCM</strong> avec sa plateforme (<code>ANDROID</code>, <code>IOS</code>, <code>WEB</code>) et peut le retirer à la déconnexion. Un utilisateur peut avoir plusieurs appareils.</td></tr>
+              <tr><td><span class="rid">EF-10.2</span></td><td>Un jeton peut <strong>migrer d'un compte à l'autre</strong> (appareil partagé, réinstallation) : il est toujours rattaché au dernier utilisateur l'ayant enregistré.</td></tr>
+              <tr><td><span class="rid">EF-10.3</span></td><td>Le jeton n'est <strong>jamais réexposé</strong> en lecture ; seuls id, plateforme et dates sont restitués.</td></tr>
+              <tr><td><span class="rid">EF-10.4</span></td><td>Déclencheurs automatiques : <strong>appel entrant</strong> (<code>INCOMING_CALL</code>) et <strong>nouveau média</strong> (<code>NEW_MEDIA</code>). Le parent n'est pas notifié des médias qu'il dépose lui-même.</td></tr>
+              <tr><td><span class="rid">EF-10.5</span></td><td>L'ADMIN peut envoyer une notification libre à un utilisateur ciblé.</td></tr>
+              <tr><td><span class="rid">EF-10.6</span></td><td>Les envois sont <strong>asynchrones et après commit</strong> : la latence FCM n'impacte jamais le temps de réponse de l'appel ou de l'upload.</td></tr>
+              <tr><td><span class="rid">EF-10.7</span></td><td><strong>Best-effort</strong> : un échec d'envoi n'est jamais propagé à l'appelant. Les jetons déclarés invalides par FCM sont automatiquement purgés.</td></tr>
+              <tr><td><span class="rid">EF-10.8</span></td><td><strong>Dégradation propre</strong> : Firebase désactivé → les envois sont ignorés silencieusement, le reste du système fonctionne.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>3.11 — Photo de profil</h3>
+        <div class="tw">
+          <table>
+            <thead><tr><th>Réf.</th><th class="wide">Exigence</th></tr></thead>
+            <tbody>
+              <tr><td><span class="rid">EF-11.1</span></td><td>Tout utilisateur authentifié peut téléverser ou supprimer <strong>sa propre</strong> photo de profil. Elle est optionnelle.</td></tr>
+              <tr><td><span class="rid">EF-11.2</span></td><td>La photo est consultable via une URL stable (<code>/api/users/{id}/profile-picture</code>), relayée dans le champ <code>profilePic</code> du profil, <code>null</code> en son absence.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============ 4 ============ -->
+      <section class="sec" id="s4">
+        <h2><span class="n">04</span><span>Interfaces exposées</span></h2>
+
+        <div class="body">
+          <p>Base : <code>/api</code>. Sauf mention contraire, authentification JWT requise.</p>
+        </div>
+
+        <div class="tw">
+          <table>
+            <thead><tr><th>Domaine</th><th class="wide">Endpoints</th><th>Accès</th></tr></thead>
+            <tbody>
+              <tr>
+                <th>Authentification</th>
+                <td><code>POST /api/auth/register</code> · <code>/login</code> · <code>/refresh</code> · <code>/logout</code> · <code>GET /me</code></td>
+                <td>public sauf <code>logout</code> et <code>me</code></td>
+              </tr>
+              <tr>
+                <th>Administration</th>
+                <td><code>GET /api/admin/users?status=&amp;role=</code> · <code>/users/pending</code> · <code>POST /users/{id}/approve · /reject · /suspend · /reactivate</code> · <code>POST /notifications</code></td>
+                <td>ADMIN</td>
+              </tr>
+              <tr>
+                <th>Aidant</th>
+                <td><code>POST /api/aidant/parents</code> · <code>GET /parents</code> · <code>GET /links/pending</code> · <code>POST /links/{id}/approve · /reject</code> · <code>POST /subscriptions</code></td>
+                <td>AIDANT</td>
+              </tr>
+              <tr>
+                <th>Liaisons</th>
+                <td><code>POST /api/links</code> (via <code>parentUsername</code>) · <code>GET /mine</code></td>
+                <td>FAMILLE</td>
+              </tr>
+              <tr>
+                <th>Albums</th>
+                <td><code>POST /api/albums</code> · <code>GET /?parentId=</code> · <code>GET /{id}</code> · <code>PATCH /{id}</code> (couverture) · <code>DELETE /{id}</code></td>
+                <td>selon <span class="rid">RG-ACCES</span></td>
+              </tr>
+              <tr>
+                <th>Médias</th>
+                <td><code>POST /api/albums/{albumId}/media</code> · <code>GET /albums/{albumId}/media?favorite=&amp;type=</code> · <code>GET /media?parentId=</code> · <code>/media/favorites</code> · <code>/media/{id}</code> · <code>/media/{id}/content</code> · <code>/media/{id}/thumbnail?size=</code> · <code>PATCH /media/{id}/favorite</code> · <code>DELETE /media/{id}</code></td>
+                <td>selon <span class="rid">RG-ACCES</span></td>
+              </tr>
+              <tr>
+                <th>Profil</th>
+                <td><code>PUT /api/me/profile-picture</code> · <code>DELETE /api/me/profile-picture</code> · <code>GET /api/users/{userId}/profile-picture</code></td>
+                <td>authentifié</td>
+              </tr>
+              <tr>
+                <th>Abonnements</th>
+                <td><code>GET /api/subscriptions/parent/{parentId}</code></td>
+                <td>selon <span class="rid">RG-ACCES</span></td>
+              </tr>
+              <tr>
+                <th>Paiement</th>
+                <td><code>POST /api/payments/checkout</code> · <code>POST /api/payments/portal</code> · <code>POST /api/webhooks/stripe</code></td>
+                <td>AIDANT ; webhook public signé</td>
+              </tr>
+              <tr>
+                <th>Appels</th>
+                <td><code>POST /api/calls</code> · <code>PATCH /{id}/status</code> · <code>GET /{id}</code> · <code>GET /history</code> · <code>GET /ice-servers</code></td>
+                <td>FAMILLE, AIDANT, PARENT</td>
+              </tr>
+              <tr>
+                <th>Rappels</th>
+                <td><code>POST /api/reminders</code> · <code>GET /?parentId=&amp;activeOnly=</code> · <code>GET /{id}</code> · <code>PUT /{id}</code> · <code>PATCH /{id}/active</code> · <code>DELETE /{id}</code></td>
+                <td>selon <span class="rid">RG-ACCES</span></td>
+              </tr>
+              <tr>
+                <th>Notifications</th>
+                <td><code>POST /api/notifications/tokens</code> · <code>GET /</code> · <code>DELETE /?token=</code></td>
+                <td>authentifié</td>
+              </tr>
+              <tr>
+                <th>Supervision</th>
+                <td><code>GET /actuator/health</code> · <code>GET /v3/api-docs</code> · <code>GET /swagger-ui.html</code></td>
+                <td>public</td>
+              </tr>
+              <tr>
+                <th>Temps réel</th>
+                <td><code>wss://&lt;domaine&gt;/ws/calls</code> — signalisation WebRTC</td>
+                <td>JWT au handshake</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="body">
+          <p>
+            <span class="rid">EF-DOC-1</span> &nbsp;La spécification <strong>OpenAPI 3</strong> est
+            générée automatiquement (springdoc-openapi 3.0.3) et exposée publiquement, avec une
+            <strong>Swagger UI</strong> permettant d'exécuter les endpoints protégés après saisie
+            d'un token (schéma <code>bearerAuth</code>).
+          </p>
+        </div>
+      </section>
+
+      <!-- ============ 5 ============ -->
+      <section class="sec" id="s5">
+        <h2><span class="n">05</span><span>Modèle de données</span></h2>
+
+        <div class="body">
+          <p>Neuf entités persistées, identifiants <strong>UUID</strong> générés en base.</p>
+        </div>
+
+        <div class="tw">
+          <table>
+            <thead><tr><th>Entité</th><th>Rôle</th><th class="wide">Contraintes structurantes</th></tr></thead>
+            <tbody>
+              <tr><th><code>User</code></th><td>Compte unique tous rôles</td><td><code>email</code> unique, <code>username</code> unique, <code>stripeCustomerId</code> unique ; auto-références <code>managingAidant</code>, <code>createdBy</code>, <code>validatedBy</code></td></tr>
+              <tr><th><code>RefreshToken</code></th><td>Session longue durée</td><td>Token unique et indexé, date d'expiration, drapeau de révocation</td></tr>
+              <tr><th><code>FamilyLink</code></th><td>Liaison FAMILLE ↔ PARENT</td><td><strong>Unicité (famille, parent)</strong> ; statut, relation, décideur et date de décision</td></tr>
+              <tr><th><code>Album</code></th><td>Regroupement de médias</td><td>Rattaché à un PARENT et à son créateur ; référence de média de couverture</td></tr>
+              <tr><th><code>Media</code></th><td>Photo ou vidéo</td><td>Type, nom d'origine, clé de stockage, type MIME, taille en octets, message (1 000 car.), favori, auteur</td></tr>
+              <tr><th><code>Subscription</code></th><td>Formule et quota d'un parent</td><td>Plan, <code>quotaBytes</code>, <code>usedBytes</code>, actif, dates de validité, <code>stripeSubscriptionId</code>, aidant gestionnaire</td></tr>
+              <tr><th><code>CallSession</code></th><td>Appel vidéo</td><td>Appelant, appelé, statut, <code>roomId</code>, horodatages de début et de fin</td></tr>
+              <tr><th><code>Reminder</code></th><td>Rappel du quotidien</td><td>Type, heure, date <em>ou</em> jours de la semaine (collection), actif, parent, auteur</td></tr>
+              <tr><th><code>DeviceToken</code></th><td>Appareil destinataire des push</td><td>Token unique (512 car.), plateforme, dernière utilisation</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="note flag">
+          <strong>Contrainte.</strong> Le schéma est géré par Hibernate en mode
+          <code>ddl-auto=update</code>, sans outil de migration versionnée.
+        </div>
+      </section>
+
+      <!-- ============ 6 ============ -->
+      <section class="sec" id="s6">
+        <h2><span class="n">06</span><span>Exigences de sécurité</span></h2>
+        <div class="tw">
+          <table>
+            <thead><tr><th>Réf.</th><th class="wide">Exigence</th></tr></thead>
+            <tbody>
+              <tr><td><span class="rid">ES-1</span></td><td>API <strong>stateless</strong> : aucune session serveur, CSRF désactivé (sans pertinence hors cookies).</td></tr>
+              <tr><td><span class="rid">ES-2</span></td><td><strong>Tout endpoint est authentifié par défaut</strong> ; la liste blanche publique est explicite et limitée : inscription, connexion, rafraîchissement, webhook Stripe, poignée de main WebSocket, documentation OpenAPI, <code>/actuator/health</code>, <code>/error</code>.</td></tr>
+              <tr><td><span class="rid">ES-3</span></td><td>Autorisation à deux niveaux : <strong>cloisonnement par rôle</strong> déclaratif (<code>@PreAuthorize</code>) <strong>et</strong> vérification de propriété ou de liaison dans les services. Le premier ne suffit jamais seul.</td></tr>
+              <tr><td><span class="rid">ES-4</span></td><td>Mots de passe <strong>BCrypt</strong>, jamais restitués ni journalisés.</td></tr>
+              <tr><td><span class="rid">ES-5</span></td><td>Secret JWT d'au moins 32 octets décodés, fourni par variable d'environnement en production.</td></tr>
+              <tr><td><span class="rid">ES-6</span></td><td>Les <strong>secrets tiers ne quittent jamais l'API</strong> : jeton Cloudflare TURN, clé secrète Stripe, service account Firebase.</td></tr>
+              <tr><td><span class="rid">ES-7</span></td><td>Le webhook Stripe vérifie la <strong>signature <code>Stripe-Signature</code></strong> avant tout traitement.</td></tr>
+              <tr><td><span class="rid">ES-8</span></td><td>Le jeton FCM d'un appareil n'est jamais réexposé en lecture.</td></tr>
+              <tr><td><span class="rid">ES-9</span></td><td>Les origines autorisées à ouvrir le WebSocket sont <strong>configurables</strong> et doivent être restreintes aux domaines du front en production.</td></tr>
+              <tr><td><span class="rid">ES-10</span></td><td>Terminaison <strong>TLS obligatoire</strong> en production (Caddy, certificat Let's Encrypt auto-renouvelé).</td></tr>
+              <tr><td><span class="rid">ES-11</span></td><td>Les médias sont stockés dans un <strong>bucket S3 privé, chiffré (SSE-S3) et versionné</strong>, accessible via un <strong>rôle IAM d'instance</strong> — aucun credential AWS sur la machine. Droits limités à <code>Get/Put/Delete/ListObject</code> sur ce seul bucket.</td></tr>
+              <tr><td><span class="rid">ES-12</span></td><td>Le service account Firebase est lu depuis <strong>SSM Parameter Store</strong> (SecureString) en production.</td></tr>
+              <tr><td><span class="rid">ES-13</span></td><td>Gestion d'erreurs centralisée : messages métier explicites, pas de fuite de trace technique.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============ 7 ============ -->
+      <section class="sec" id="s7">
+        <h2><span class="n">07</span><span>Architecture technique</span></h2>
+
+        <h3>Découpage applicatif</h3>
+        <pre class="diagram">domain/      entités JPA + énumérations
+repository/  Spring Data JPA
+dto/         records de requête/réponse (aucune entité exposée directement)
+security/    JWT (service, filtre HTTP, intercepteur de handshake WS, CurrentUser)
+service/     logique métier + AccessGuard + StorageService (local | S3)
+controller/  endpoints REST
+websocket/   handler de signalisation
+event/       événements applicatifs et listeners de notification
+config/      sécurité, WebSocket, S3, Stripe, Firebase, TURN, OpenAPI, bootstrap
+exception/   gestion globale des erreurs</pre>
+
+        <h4>Principes structurants</h4>
+        <div class="body">
+          <ul>
+            <li><strong>Aucune entité JPA n'est exposée</strong> : les DTO sont des <code>record</code> immuables.</li>
+            <li>La règle d'accès aux contenus est <strong>unique</strong> (<code>AccessGuard</code>) et réutilisée par tous les services.</li>
+            <li>Les effets de bord distants (push) passent par des <strong>événements transactionnels</strong> (<code>AFTER_COMMIT</code>) traités en asynchrone.</li>
+            <li>Chaque intégration tierce est <strong>optionnelle et dégradable</strong> : absence de configuration ⇒ fonctionnalité neutralisée, jamais de panne globale.</li>
+          </ul>
+        </div>
+
+        <h3>Socle technique imposé</h3>
+        <div class="tw">
+          <table>
+            <thead><tr><th>Composant</th><th class="wide">Version / choix</th></tr></thead>
+            <tbody>
+              <tr><th>Langage</th><td>Java 17 (toolchain Gradle)</td></tr>
+              <tr><th>Framework</th><td>Spring Boot 4.1.0 — Web MVC, Data JPA, Security, Validation, WebSocket, Actuator</td></tr>
+              <tr><th>Build</th><td>Gradle, packaging <strong>WAR</strong> (<code>providedRuntime</code> Tomcat)</td></tr>
+              <tr><th>Base de données</th><td>PostgreSQL</td></tr>
+              <tr><th>JWT</th><td>jjwt 0.12.6</td></tr>
+              <tr><th>Documentation</th><td>springdoc-openapi 3.0.3</td></tr>
+              <tr><th>Stockage objet</th><td>AWS SDK v2 (S3), BOM 2.30.0</td></tr>
+              <tr><th>Secrets</th><td>AWS SSM Parameter Store</td></tr>
+              <tr><th>Push</th><td>Firebase Admin SDK 9.4.3</td></tr>
+              <tr><th>Paiement</th><td>stripe-java 29.2.0</td></tr>
+              <tr><th>Miniatures</th><td>ImageIO / Graphics2D — <strong>sans dépendance externe</strong></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Stockage des médias</h3>
+        <div class="body">
+          <p>
+            <span class="rid">EF-STO-1</span> &nbsp;Le stockage est abstrait derrière une interface
+            <code>StorageService</code> avec deux implémentations sélectionnées par configuration
+            (<code>app.storage.backend</code>) : <code>local</code> (système de fichiers, défaut,
+            développement) et <code>s3</code> (bucket S3, production), avec support d'un endpoint
+            personnalisé (MinIO, LocalStack) et de l'accès <em>path-style</em>. Les objets sont
+            organisés par <code>&lt;parentId&gt;/&lt;albumId&gt;/</code>.
+          </p>
+        </div>
+      </section>
+
+      <!-- ============ 8 ============ -->
+      <section class="sec" id="s8">
+        <h2><span class="n">08</span><span>Exigences non fonctionnelles</span></h2>
+        <div class="tw">
+          <table>
+            <thead><tr><th>Réf.</th><th>Axe</th><th class="wide">Exigence</th></tr></thead>
+            <tbody>
+              <tr><td><span class="rid">ENF-1</span></td><td>Disponibilité</td><td>Une indisponibilité d'un service tiers (Cloudflare TURN, Stripe, FCM) ne doit pas rendre l'API indisponible ; chaque intégration a un mode dégradé documenté.</td></tr>
+              <tr><td><span class="rid">ENF-2</span></td><td>Latence</td><td>Les traitements distants non essentiels à la réponse (notifications push) sont exécutés hors du chemin de réponse HTTP.</td></tr>
+              <tr><td><span class="rid">ENF-3</span></td><td>Coût</td><td>Le média d'appel ne transite pas par le serveur. Le relais TURN, facturé au volume, n'est utilisé qu'en dernier recours.</td></tr>
+              <tr><td><span class="rid">ENF-4</span></td><td>Bande passante</td><td>Les miniatures sont immuables et servies avec un cache d'un an ; le cadre ne retélécharge pas les vignettes déjà vues.</td></tr>
+              <tr><td><span class="rid">ENF-5</span></td><td>Volumétrie</td><td>512 Mo par fichier ; quota par parent de 1 à 200 Go selon la formule.</td></tr>
+              <tr><td><span class="rid">ENF-6</span></td><td>Supervision</td><td>Endpoint de santé public sans détail, exploitable par un load balancer.</td></tr>
+              <tr><td><span class="rid">ENF-7</span></td><td>Portabilité</td><td>L'ensemble s'exécute en conteneurs Docker ; les tests s'exécutent sans Docker ni PostgreSQL.</td></tr>
+              <tr><td><span class="rid">ENF-8</span></td><td>Traçabilité</td><td>Toute décision d'administration (validation de compte, décision de liaison) conserve son auteur et son horodatage.</td></tr>
+              <tr><td><span class="rid">ENF-9</span></td><td>Configurabilité</td><td>Tout paramètre d'environnement est surchargeable par variable d'environnement, avec un défaut de développement fonctionnel.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============ 9 ============ -->
+      <section class="sec" id="s9">
+        <h2><span class="n">09</span><span>Environnements et configuration</span></h2>
+
+        <h3>Variables d'environnement principales</h3>
+        <div class="tw">
+          <table>
+            <thead><tr><th>Variable</th><th>Défaut</th><th class="wide">Rôle</th></tr></thead>
+            <tbody>
+              <tr><th><code>SERVER_PORT</code></th><td><code>8181</code></td><td>Port d'écoute</td></tr>
+              <tr><th><code>FORWARD_HEADERS_STRATEGY</code></th><td><code>none</code></td><td><code>framework</code> derrière un reverse-proxy TLS</td></tr>
+              <tr><th><code>SPRING_DATASOURCE_URL</code> · <code>_USERNAME</code> · <code>_PASSWORD</code></th><td>PostgreSQL local</td><td>Connexion base</td></tr>
+              <tr><th><code>JWT_SECRET</code></th><td>clé de développement</td><td><strong>À remplacer en production</strong> (≥ 32 octets décodés)</td></tr>
+              <tr><th><code>ADMIN_EMAIL</code> · <code>ADMIN_PASSWORD</code></th><td>défaut de dev</td><td>Compte ADMIN bootstrap</td></tr>
+              <tr><th><code>WS_ALLOWED_ORIGINS</code></th><td><code>*</code></td><td>Origines autorisées sur le WebSocket</td></tr>
+              <tr><th><code>APP_STORAGE_BACKEND</code> · <code>_LOCATION</code></th><td><code>local</code> · <code>./storage</code></td><td>Backend de stockage</td></tr>
+              <tr><th><code>APP_S3_BUCKET</code> · <code>_REGION</code> · <code>_ENDPOINT</code> · <code>_PATH_STYLE</code></th><td>— · <code>eu-west-3</code></td><td>Configuration S3</td></tr>
+              <tr><th><code>TURN_KEY_ID</code> · <code>TURN_API_TOKEN</code> · <code>TURN_TTL_SECONDS</code></th><td>vide · vide · <code>3600</code></td><td>Relais TURN Cloudflare (vide = STUN seul)</td></tr>
+              <tr><th><code>STRIPE_SECRET_KEY</code> · <code>STRIPE_WEBHOOK_SECRET</code></th><td>vide</td><td>Paiement (vide = désactivé)</td></tr>
+              <tr><th><code>STRIPE_PRICE_BASIC</code> · <code>_PREMIUM</code></th><td>vide</td><td>Identifiants de prix mensuels Stripe</td></tr>
+              <tr><th><code>FIREBASE_ENABLED</code> · <code>FIREBASE_SSM_PARAMETER</code></th><td><code>false</code> · vide</td><td>Notifications push</td></tr>
+              <tr><th><code>CADDY_DOMAIN</code> · <code>CADDY_ACME_EMAIL</code></th><td>—</td><td>Domaine et contact ACME (TLS)</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="note flag">
+          Aucun secret de production ne doit figurer dans le dépôt : <code>.env</code> et les clés
+          SSH sont exclus du versionnement.
+        </div>
+
+        <h3>Cible de déploiement</h3>
+        <div class="body">
+          <p>Instance <strong>EC2</strong> (Amazon Linux 2023) exécutant trois conteneurs Docker.</p>
+        </div>
+        <pre class="diagram">Internet ──HTTPS:443──&gt; Caddy (TLS Let's Encrypt) ──&gt; api:8181 ──&gt; postgres
+                                                          │
+                                                          └──IAM role──&gt; S3 (médias)</pre>
+        <div class="body">
+          <ul>
+            <li>Région par défaut <strong>eu-west-3 (Paris)</strong>.</li>
+            <li>Le domaine doit disposer d'un enregistrement DNS <strong>A</strong> vers l'IP publique (idéalement Elastic IP) — prérequis à l'émission du certificat.</li>
+            <li>Corps de requête accepté par le proxy : 512 Mo, aligné sur la limite applicative.</li>
+            <li>Déploiement outillé par scripts numérotés : bucket S3, rôle IAM, lancement EC2, déploiement API, déploiement front, injection du secret Firebase.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- ============ 10 ============ -->
+      <section class="sec" id="s10">
+        <h2><span class="n">10</span><span>Recette et qualité</span></h2>
+
+        <div class="body">
+          <p>
+            <span class="rid">EF-TEST-1</span> &nbsp;La suite de tests s'exécute sur <strong>H2 en
+            mémoire</strong> (profil <code>test</code>), sans PostgreSQL ni Docker.
+          </p>
+        </div>
+
+        <div class="tw">
+          <table>
+            <thead><tr><th>Suite</th><th class="wide">Couverture</th></tr></thead>
+            <tbody>
+              <tr><th><code>CadreMobihoApiApplicationTests</code></th><td>Chargement du contexte applicatif</td></tr>
+              <tr><th><code>AuthFlowIntegrationTest</code></th><td>Parcours de bout en bout : inscription → blocage avant validation → validation ADMIN → connexion → création PARENT → demande de liaison → refus d'accès avant validation → validation → création d'album → dépôt de photo → lecture par le PARENT. Plus : rejet des rôles privilégiés à l'inscription, exigence d'authentification, cloisonnement des rôles, accès public à la spec OpenAPI</td></tr>
+              <tr><th><code>CallInitiationTest</code></th><td>Droit d'initier un appel : AIDANT limité à ses parents, FAMILLE seulement si liaison <code>APPROVED</code>, refus du PARENT initiateur et des cibles non-PARENT</td></tr>
+              <tr><th><code>CallSignalingIntegrationTest</code></th><td>Serveur réellement démarré, deux clients WebSocket : handshake authentifié (en-tête et <code>?token=</code>), appariement des pairs, relais d'une offre SDP, notification de départ, refus d'un tiers et d'un appel terminé</td></tr>
+              <tr><th><code>IceServerServiceTest</code></th><td>Génération des identifiants TURN (API Cloudflare simulée) et repli STUN quand le relais est absent ou muet</td></tr>
+              <tr><th><code>ThumbnailServiceTest</code></th><td>Redimensionnement des miniatures, sans contexte Spring</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="rule-card">
+          <p><strong>Critères d'acceptation transverses.</strong> Toute évolution doit préserver :</p>
+          <ol>
+            <li>l'impossibilité pour un compte non validé de se connecter ;</li>
+            <li>l'impossibilité pour une liaison non approuvée d'accéder au moindre contenu ;</li>
+            <li>la dégradation propre de chaque intégration tierce.</li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- ============ 11 ============ -->
+      <section class="sec" id="s11">
+        <h2><span class="n">11</span><span>Contraintes et hypothèses</span></h2>
+        <div class="tw">
+          <table>
+            <thead><tr><th>Réf.</th><th class="wide">Contrainte</th></tr></thead>
+            <tbody>
+              <tr><td><span class="rid flag">C-1</span></td><td><strong>Instance unique</strong> — Les salles de signalisation vivent en mémoire. Le passage à plusieurs instances impose un relais externe (Redis pub/sub) ou une affinité de session par <code>callId</code>.</td></tr>
+              <tr><td><span class="rid flag">C-2</span></td><td>Le client WebSocket <strong>doit</strong> émettre un ping périodique (~30 s) sous peine de fermeture après 15 minutes.</td></tr>
+              <tr><td><span class="rid flag">C-3</span></td><td>Les rappels sont <strong>stockés et restitués</strong> par l'API ; leur déclenchement à l'heure dite est à la charge du client — aucun ordonnanceur serveur.</td></tr>
+              <tr><td><span class="rid flag">C-4</span></td><td>Le poster de vignette vidéo est <strong>généré</strong>, non extrait de la vidéo : une vraie frame exigerait ffmpeg ou JavaCV.</td></tr>
+              <tr><td><span class="rid flag">C-5</span></td><td>Le schéma de base évolue par <code>ddl-auto=update</code>, sans outil de migration versionnée.</td></tr>
+              <tr><td><span class="rid flag">C-6</span></td><td>Un appel derrière un NAT symétrique <strong>échoue</strong> si TURN n'est pas configuré.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============ 12 ============ -->
+      <section class="sec" id="s12">
+        <h2><span class="n">12</span><span>Écarts identifiés</span></h2>
+
+        <div class="body">
+          <p>Points relevés lors de la rédaction, non couverts à ce jour.</p>
+        </div>
+
+        <div class="tw">
+          <table>
+            <thead><tr><th>Réf.</th><th class="wide">Écart</th><th class="wide">Impact</th></tr></thead>
+            <tbody>
+              <tr><td><span class="rid flag">E-1</span></td><td>Aucun <strong>mot de passe oublié</strong> ni réinitialisation en libre-service.</td><td>Toute perte de mot de passe exige une intervention manuelle.</td></tr>
+              <tr><td><span class="rid flag">E-2</span></td><td>Aucune <strong>vérification d'adresse e-mail</strong> à l'inscription.</td><td>La validation ADMIN est le seul filtre.</td></tr>
+              <tr><td><span class="rid flag">E-3</span></td><td>Aucune <strong>pagination</strong> sur les listes (médias, historique d'appels, utilisateurs).</td><td>Dégradation attendue sur les comptes à fort volume.</td></tr>
+              <tr><td><span class="rid flag">E-4</span></td><td>Aucune <strong>limitation de débit</strong> sur <code>/api/auth/login</code>.</td><td>Exposition au bourrinage d'identifiants.</td></tr>
+              <tr><td><span class="rid flag">E-5</span></td><td>Aucune <strong>configuration CORS</strong> applicative.</td><td>Un front web sur un domaine distinct dépend entièrement du reverse-proxy.</td></tr>
+              <tr><td><span class="rid flag">E-6</span></td><td>Identifiants de base et mot de passe ADMIN de développement en clair dans <code>application.properties</code>.</td><td>Acceptable en développement, à ne jamais promouvoir en production.</td></tr>
+              <tr><td><span class="rid flag">E-7</span></td><td>Pas de <strong>canal de notification entrant</strong> générique côté web : <code>/ws/calls</code> exige un <code>callId</code> connu.</td><td>Les clients web interrogent l'historique en boucle ; charge inutile.</td></tr>
+              <tr><td><span class="rid flag">E-8</span></td><td>Le README ne documentait pas les modules rappels, push, paiement, profil et stockage S3.</td><td>Documentation en retard sur le code <em>(corrigé)</em>.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============ 13 ============ -->
+      <section class="sec" id="s13">
+        <h2><span class="n">13</span><span>Évolutions attendues</span></h2>
+        <div class="tw">
+          <table>
+            <thead><tr><th>Réf.</th><th class="wide">Évolution</th></tr></thead>
+            <tbody>
+              <tr><td><span class="rid">EV-1</span></td><td>Canal WebSocket de notifications générales (<code>/ws/notifications</code>) supprimant le <em>polling</em> de l'historique d'appels.</td></tr>
+              <tr><td><span class="rid">EV-2</span></td><td>Priorité haute et <em>data-only</em> sur les push d'appel entrant, pour un réveil fiable de l'appareil.</td></tr>
+              <tr><td><span class="rid">EV-3</span></td><td>Ordonnanceur serveur des rappels avec émission push à l'heure prévue.</td></tr>
+              <tr><td><span class="rid">EV-4</span></td><td>Migrations de schéma versionnées (Flyway ou Liquibase) en remplacement de <code>ddl-auto=update</code>.</td></tr>
+              <tr><td><span class="rid">EV-5</span></td><td>Pagination et tri sur les listes volumineuses.</td></tr>
+              <tr><td><span class="rid">EV-6</span></td><td>Réinitialisation de mot de passe et vérification d'adresse e-mail.</td></tr>
+              <tr><td><span class="rid">EV-7</span></td><td>Scalabilité horizontale de la signalisation (relais Redis ou affinité par <code>callId</code>).</td></tr>
+              <tr><td><span class="rid">EV-8</span></td><td>Extraction d'une véritable image de couverture vidéo.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============ annexe ============ -->
+      <section class="sec" id="annexe">
+        <h2><span class="n">—</span><span>Annexe : glossaire</span></h2>
+        <div class="tw">
+          <table>
+            <thead><tr><th>Terme</th><th class="wide">Définition</th></tr></thead>
+            <tbody>
+              <tr><th>Aidant</th><td>Proche référent qui administre et finance le compte du senior.</td></tr>
+              <tr><th>Parent</th><td>Le senior utilisateur du cadre, dans la terminologie du domaine.</td></tr>
+              <tr><th>Liaison</th><td>Relation validée entre un compte FAMILLE et un compte PARENT, ouvrant l'accès aux contenus et à l'appel.</td></tr>
+              <tr><th>WebRTC</th><td>Standard d'échange audio/vidéo pair à pair entre navigateurs et applications.</td></tr>
+              <tr><th>Signalisation</th><td>Échange de métadonnées (SDP, candidats ICE) nécessaire à l'établissement d'une session WebRTC ; ne contient aucun média.</td></tr>
+              <tr><th>STUN</th><td>Serveur permettant à un pair de découvrir son adresse publique.</td></tr>
+              <tr><th>TURN</th><td>Serveur relais utilisé quand la connexion directe entre pairs est impossible.</td></tr>
+              <tr><th>FCM</th><td>Firebase Cloud Messaging, service d'acheminement des notifications push.</td></tr>
+              <tr><th>Dunning</th><td>Procédure de relance automatique de Stripe après un échec de prélèvement.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <footer class="doc">
+        Cahier des charges CadreMobiho API — version 1.0, 2 septembre 2026. Document reconstitué
+        à partir du code source ; la source de vérité reste le dépôt et la spécification OpenAPI
+        générée.
+      </footer>
+
+    </main>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var root = document.documentElement;
+    var btn = document.getElementById('themeToggle');
+    var KEY = 'cadremobiho-cdc-theme';
+
+    try {
+      var saved = localStorage.getItem(KEY);
+      if (saved === 'dark' || saved === 'light') { root.setAttribute('data-theme', saved); }
+    } catch (e) { /* stockage indisponible : on garde la préférence système */ }
+
+    btn.addEventListener('click', function () {
+      var current = root.getAttribute('data-theme');
+      if (!current) {
+        current = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+      var next = current === 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      try { localStorage.setItem(KEY, next); } catch (e) { /* non bloquant */ }
+    });
+  })();
+</script>
+
+</body>
+</html>
